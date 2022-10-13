@@ -38,8 +38,42 @@ const addTask = async (data) => {
     }
 }
 
+const updateTask = async (id, data) => {
+    const dataToUpdate = Object.keys(data);
+    const fillable = ['description', 'completed'];
+    const isValidOperation = dataToUpdate.every((datatoupdate) => {
+        return fillable.includes(datatoupdate);
+    });
+
+    try {
+        if (!isValidOperation) {
+            return {error: 'Invalid schema to update'};
+        }
+        const update = (await Tasks.findOneAndUpdate({_id: id}, data, {new: true, runValidators: true, useFindAndModify: false}));
+        if (!update) {
+            return {error: 'something went wrong when updating'};
+        }
+        
+        return update;
+    } catch (err) {
+        return err;
+    }
+}
+
+const deleteTask = async (id) => {
+    try {
+        // const result  = (await Tasks.findByIdAndDelete(id));
+        // console.log(result);
+        return (await Tasks.countDocuments({completed: true}));
+    } catch (err) {
+        return err
+    }
+}
+
 module.exports = {
     fetchTaskById: fetchTaskById,
     fetchTasks: fetchTasks,
-    addTask: addTask
+    addTask: addTask,
+    deleteTask: deleteTask,
+    updateTask: updateTask
 }

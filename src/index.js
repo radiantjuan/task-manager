@@ -26,9 +26,9 @@ app.get('/users/:id', async (req, res) => {
         } else {
             res.status(404).send();
         }
-        
+
     } catch (err) {
-        res.status(500).send({error: err.message});
+        res.status(500).send({ error: err.message });
     }
 });
 
@@ -47,6 +47,26 @@ app.post('/users', async (req, res) => {
     }
 });
 
+app.patch('/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const result = (await Users.updateUser(id, req.body));
+    if (!result || result.error) {
+        res.status(400).send(result);
+    } else {
+        res.send(result);
+    }
+});
+
+app.delete('/users/:id', async (req, res) => {
+    const { id } = req.params;
+    const result = (await Users.deleteUser(id));
+    if (!result || result.error) {
+        res.status(400).send(result);
+    } else {
+        res.send();
+    }
+});
+
 
 app.get('/tasks', async (req, res) => {
     res.send(await Tasks.fetchTasks());
@@ -61,10 +81,21 @@ app.get('/tasks/:id', async (req, res) => {
         } else {
             res.status(404).send();
         }
-        
+
     } catch (err) {
-        res.status(500).send({error: err.message});
+        res.status(500).send({ error: err.message });
     }
+});
+
+app.patch('/tasks/:id', async (req, res) => {
+    const { id } = req.params;
+    const result = (await Tasks.updateTask(id, req.body));
+    if (!result || result.error) {
+        res.status(400).send(result);
+    } else {
+        res.send(result);
+    }
+
 });
 
 app.post('/tasks', async (req, res) => {

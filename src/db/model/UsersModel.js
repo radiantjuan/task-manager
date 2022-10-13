@@ -67,10 +67,44 @@ const addUser = async (data) => {
     }
 }
 
+const updateUser  = async (id, data) => {
+    const updates = Object.keys(data);
+    const fillable = ['name', 'email', 'password', 'age'];
+    const isValidOperation = updates.every((update) => fillable.includes(update));
+
+    if (!isValidOperation) {
+        return {error: 'Invalid schema update'}
+    }
+
+    try {
+        const user = (await User.findOneAndUpdate({_id: id}, data, {new: true, runValidators: true, useFindAndModify: false}));
+        if (!user) {
+            return {error: 'can\'t find ID'}
+        }
+        return user;
+    } catch (err) {
+        return err
+    }
+}
+
+const deleteUser = async (id) => {
+    try {
+        const del = (await User.findByIdAndDelete(id));
+        if (!del) {
+            return {error: 'failed delete ID not existing'};
+        }
+        return del;
+    } catch(err) {
+        return err
+    }
+};
+
 module.exports = {
     fetchAllUsers: fetchAllUsers,
     fetchUsersById: fetchUsersById,
-    addUser: addUser
+    addUser: addUser,
+    updateUser: updateUser,
+    deleteUser: deleteUser
 } 
 
 // const me = new User({
