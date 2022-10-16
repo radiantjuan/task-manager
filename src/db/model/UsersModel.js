@@ -1,12 +1,15 @@
-const { model } = require('mongoose');
+const { model, Schema } = require('mongoose');
 const validator = require('validator');
+const bcrypt = require('bcryptjs');
+const jwt = require('jsonwebtoken');
 
-const User = model('User', {
+const userSchema = new Schema({
     email: {
         type: String,
         required: true,
         trim: true,
         lowercase: true,
+        unique: true,
         validate(value) {
             if (!validator.isEmail(value)) {
                 throw new Error("Not email");
@@ -37,87 +40,46 @@ const User = model('User', {
                 throw new Error('Age must be postive');
             }
         }
-    }
+    },
+    tokens: [{
+        token: {
+            type: String,
+            require: true
+        }
+    }]
 });
 
-const fetchAllUsers = async () => {
-    try {
-        const result = (await User.find({}));
-        return result;
-    } catch(err) {
-        return err;
-    }
+userSchema.methods.generateAuthToken = async function () {
+    const user = this;
+    const token = jwt.sign({ _id: user.id.toString() }, 'supersecret');
+
+    user.tokens = user.tokens.concat({ token });
+    await user.save();
+
+    return user;
 }
 
-const fetchUsersById = async (id) => {
-    try {
-        const result = (await User.findById(id).exec());
-        return result;
-    } catch(err) {
-        throw Error('Error in fetching data in the database');
+userSchema.statics.findByCredentials = async (email, password) => {
+    const user = await User.findOne({ email });
+    if (!user) {
+        throw new Error('Unable to login');
     }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+        throw new Error('Unable to login');
+    }
+    return user;
 }
 
-const addUser = async (data) => {
-    try {
-        const user = new User(data);
-        return await user.save();
-    } catch (err) {
-        return err;
+userSchema.pre('save', async function (next) {
+    const user = this;
+    if (user.isModified('password')) {
+        user.password = await bcrypt.hash(user.password, 8);
     }
-}
+    next();
+});
 
-const updateUser  = async (id, data) => {
-    const updates = Object.keys(data);
-    const fillable = ['name', 'email', 'password', 'age'];
-    const isValidOperation = updates.every((update) => fillable.includes(update));
-
-    if (!isValidOperation) {
-        return {error: 'Invalid schema update'}
-    }
-
-    try {
-        const user = (await User.findOneAndUpdate({_id: id}, data, {new: true, runValidators: true, useFindAndModify: false}));
-        if (!user) {
-            return {error: 'can\'t find ID'}
-        }
-        return user;
-    } catch (err) {
-        return err
-    }
-}
-
-const deleteUser = async (id) => {
-    try {
-        const del = (await User.findByIdAndDelete(id));
-        if (!del) {
-            return {error: 'failed delete ID not existing'};
-        }
-        return del;
-    } catch(err) {
-        return err
-    }
-};
-
-module.exports = {
-    fetchAllUsers: fetchAllUsers,
-    fetchUsersById: fetchUsersById,
-    addUser: addUser,
-    updateUser: updateUser,
-    deleteUser: deleteUser
-} 
-
-// const me = new User({
-//     email: "radjuan@gmail.com",
-//     name: "   Radiant Juan",
-//     password: "ajlkjasdkjakdj",
-//     age: 25
-// });
-
-// me.save().then((res) => {
-//     console.log(res);
-// }).catch((error) => {
-//     console.log(error.errors.password.properties.message);
-// }).finally(() => {
-    
-// });
+const User = model('User', userSchema);
+module.exports = User;
