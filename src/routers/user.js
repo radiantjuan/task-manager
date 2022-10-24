@@ -1,13 +1,10 @@
 const express = require('express');
 const User = require('../db/model/UsersModel');
 const router = new express.Router();
+const auth = require('../middleware/auth');
 
-router.get('/users', async (req, res) => {
-    try {
-        res.send(await User.find({}));
-    } catch (err) {
-        res.status(500).send();
-    }
+router.get('/users/me', auth, async (req, res) => {
+    res.send(req.user);
 });
 
 router.get('/users/:id', async (req, res) => {
@@ -28,13 +25,13 @@ router.post('/users', async (req, res) => {
     const { body } = req;
     try {
         const user = new User(body);
-        const result = await user.generateAuthToken();
-        if (result.errors || result.errmsg) {
+        const token = await user.generateAuthToken();
+        if (token.errors || token.errmsg) {
             res.status(422);
-            res.send(result);
+            res.send(token);
         } else {
             res.status(201);
-            res.send({ success: true, data: result });
+            res.send({ token });
         }
     } catch (err) {
         console.error(err)
@@ -55,16 +52,16 @@ router.patch('/users/:id', async (req, res) => {
     try {
         const user = await User.findById(params.id);
         if (!user) {
-            res.status(404).send({error: "not found"});
+            res.status(404).send({ error: "not found" });
         }
         updates.forEach((update) => user[update] = body[update]);
         const result = (await user.save());
         if (!result) {
-            res.status(404).send({error: "not found"});
+            res.status(404).send({ error: "not found" });
         }
         res.send(result);
     } catch (err) {
-        res.status(500).send({error: "something happened"});
+        res.status(500).send({ error: "something happened" });
     }
 });
 
@@ -73,10 +70,10 @@ router.delete('/users/:id', async (req, res) => {
     try {
         const del = (await User.findByIdAndDelete(id));
         if (!del) {
-            res.status(400).send({error: 'failed delete ID not existing'});
+            res.status(400).send({ error: 'failed delete ID not existing' });
         }
         res.send(del);
-    } catch(err) {
+    } catch (err) {
         res.status(500).send(err);
     }
 });
@@ -86,10 +83,32 @@ router.post('/user/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(email, password);
         const token = await user.generateAuthToken();
-        res.send({user, token});
+        res.send({ user, token });
     } catch (e) {
         console.log(e);
-        res.status(500).send({error: e});
+        res.status(500).send({ error: e });
+    }
+});
+
+router.post('/user/logout', auth, async (req, res) => {
+    try {
+        req.user.tokens = req.user.tokens.filter((data) => {
+            return data.token !== req.token.trim();
+        });
+        await req.user.save();
+        res.send();
+    } catch (e) {
+        res.status(500).send();
+    }
+});
+
+router.post('/users/logoutall', auth, async (req, res) => {
+    try {
+        req.user.tokens = [];
+        await req.user.save();
+        res.send();
+    } catch (err) {
+        res.status(500).send();
     }
 });
 
