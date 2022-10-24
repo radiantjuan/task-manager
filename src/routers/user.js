@@ -39,7 +39,7 @@ router.post('/users', async (req, res) => {
     }
 });
 
-router.patch('/users/:id', async (req, res) => {
+router.patch('/users/me', auth, async (req, res) => {
     const { body, params } = req;
     const updates = Object.keys(body);
     const fillable = ['name', 'email', 'password', 'age'];
@@ -50,29 +50,33 @@ router.patch('/users/:id', async (req, res) => {
     }
 
     try {
-        const user = await User.findById(params.id);
-        if (!user) {
+        // const user = await User.findById(params.id);
+        // if (!user) {
+        //     res.status(404).send({ error: "not found" });
+        // }
+        updates.forEach((update) => req.user[update] = body[update]);
+        await req.user.save();
+
+        if (!req.user) {
             res.status(404).send({ error: "not found" });
         }
-        updates.forEach((update) => user[update] = body[update]);
-        const result = (await user.save());
-        if (!result) {
-            res.status(404).send({ error: "not found" });
-        }
-        res.send(result);
+        
+        res.send(req.user);
     } catch (err) {
+        console.log(err);
         res.status(500).send({ error: "something happened" });
     }
 });
 
-router.delete('/users/:id', async (req, res) => {
-    const { id } = req.params;
+router.delete('/users/me', auth, async (req, res) => {
+    const { _id } = req.user;
     try {
-        const del = (await User.findByIdAndDelete(id));
-        if (!del) {
-            res.status(400).send({ error: 'failed delete ID not existing' });
-        }
-        res.send(del);
+        // const del = (await User.findByIdAndDelete(_id));
+        // if (!del) {
+        //     res.status(400).send({ error: 'failed delete ID not existing' });
+        // }
+        await req.user.remove();
+        res.send(req.user);
     } catch (err) {
         res.status(500).send(err);
     }
@@ -83,7 +87,7 @@ router.post('/user/login', async (req, res) => {
     try {
         const user = await User.findByCredentials(email, password);
         const token = await user.generateAuthToken();
-        res.send({ user, token });
+        res.send({ user: user, token });
     } catch (e) {
         console.log(e);
         res.status(500).send({ error: e });

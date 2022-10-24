@@ -20,3 +20,14 @@ app.use(TaskRoutes);
 app.listen(port, () => {
     console.log(`Server is up to port ${port}`);
 });
+
+
+const pet = {
+    name: 'Hal'
+}
+
+pet.toJSON = function() {
+    return {};
+}
+
+console.log(JSON.stringify(pet));
