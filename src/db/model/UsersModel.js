@@ -2,6 +2,7 @@ const { model, Schema } = require('mongoose');
 const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
+const Tasks = require('./TasksModel');
 
 const userSchema = new Schema({
     email: {
@@ -56,7 +57,7 @@ userSchema.virtual('tasks', {
     foreignField: 'owner'
 });
 
-userSchema.methods.toJSON = function() {
+userSchema.methods.toJSON = function () {
     const userObject = this.toObject();
     delete userObject.password;
     delete userObject.tokens;
@@ -92,6 +93,11 @@ userSchema.pre('save', async function (next) {
     if (user.isModified('password')) {
         user.password = await bcrypt.hash(user.password, 8);
     }
+    next();
+});
+
+userSchema.pre('remove', async function (next) {
+    await Tasks.deleteMany({ owner: this._id });
     next();
 });
 
