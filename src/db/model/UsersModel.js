@@ -49,6 +49,13 @@ const userSchema = new Schema({
     }]
 });
 
+
+userSchema.virtual('tasks', {
+    ref: 'Tasks',
+    localField: '_id',
+    foreignField: 'owner'
+});
+
 userSchema.methods.toJSON = function() {
     const userObject = this.toObject();
     delete userObject.password;

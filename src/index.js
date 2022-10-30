@@ -22,12 +22,29 @@ app.listen(port, () => {
 });
 
 
-const pet = {
-    name: 'Hal'
-}
+// const pet = {
+//     name: 'Hal'
+// }
 
-pet.toJSON = function() {
-    return {};
-}
+// pet.toJSON = function() {
+//     return {};
+// }
 
-console.log(JSON.stringify(pet));
+// console.log(JSON.stringify(pet));
+
+
+// const Task = require('./db/model/TasksModel');
+// const User = require('./db/model/UsersModel');
+// const main = async () => {
+//     const task = await Task.findById('635695864925f54e9c3600de');
+//     await task.populate('owner').execPopulate();
+//     console.log(task.owner);
+// }
+
+// const main = async () => {
+//     const user = await User.findById('63568f68c463296954775dd2');
+//     await user.populate('tasks').execPopulate();
+//     console.log(user.tasks);
+// }
+
+// main();
