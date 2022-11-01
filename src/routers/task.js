@@ -20,13 +20,33 @@ const auth = require('../middleware/auth');
 // });
 
 router.get('/tasks', auth, async (req, res) => {
+    const query = {
+        owner: req.user._id
+    }
+
+    const sort = {}
+
+    if (req.query.completed) {
+        query.completed = req.query.completed === 'true';
+    }
+
+    if (req.query.sortBy) {
+        const parts = req.query.sortBy.split(':');
+        sort[parts[0]] = (parts[1] === 'desc') ? -1 : 1;
+    }
+
     try {
-        const result = await Tasks.find({ owner: req.user._id });
+        const result = await Tasks.find(query, {}, {
+            limit: parseInt(req.query.limit),
+            skip: parseInt(req.query.skip),
+            sort
+        });
         if (!result) {
             res.status(404).send();
         }
         res.send(result);
     } catch (err) {
+        console.log(err);
         res.status(500).send();
     }
 });

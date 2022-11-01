@@ -48,6 +48,8 @@ const userSchema = new Schema({
             require: true
         }
     }]
+}, {
+    timestamps: true
 });
 
 
